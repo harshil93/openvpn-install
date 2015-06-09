@@ -97,7 +97,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			apt-get remove --purge -y openvpn openvpn-blacklist
 			rm -rf /etc/openvpn
 			rm -rf /usr/share/doc/openvpn
-			sed -i '/--dport 53 -j REDIRECT --to-port/d' /etc/rc.local
+			sed -i '/--dport 80 -j REDIRECT --to-port/d' /etc/rc.local
 			sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
 			echo ""
 			echo "OpenVPN removed!"
@@ -118,11 +118,11 @@ else
 	read -p "IP address: " -e -i $IP IP
 	echo ""
 	echo "What port do you want for OpenVPN?"
-	read -p "Port: " -e -i 1194 PORT
+	read -p "Port: " -e -i 443 PORT
 	echo ""
-	echo "Do you want OpenVPN to be available at port 53 too?"
+	echo "Do you want OpenVPN to be available at port 80 too?"
 	echo "This can be useful to connect under restrictive networks"
-	read -p "Listen at port 53 [y/n]: " -e -i n ALTPORT
+	read -p "Listen at port 80 [y/n]: " -e -i n ALTPORT
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
@@ -176,11 +176,11 @@ else
 	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 129.250.35.250"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 74.82.42.42"|' server.conf
-	sed -i "s|port 1194|port $PORT|" server.conf
-	# Listen at port 53 too if user wants that
+	sed -i "s|port 443|port $PORT|" server.conf
+	# Listen at port 80 too if user wants that
 	if [ $ALTPORT = 'y' ]; then
-		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT
-		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" /etc/rc.local
+		iptables -t nat -A PREROUTING -p tcp -d $IP --dport 80 -j REDIRECT --to-port $PORT
+		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p tcp -d $IP --dport 80 -j REDIRECT --to-port $PORT" /etc/rc.local
 	fi
 	# Enable net.ipv4.ip_forward for the system
 	sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
@@ -209,7 +209,7 @@ else
 	fi
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
-	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
+	sed -i "s|remote my-server-1 443|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
 	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT.conf
 	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT
 	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT
